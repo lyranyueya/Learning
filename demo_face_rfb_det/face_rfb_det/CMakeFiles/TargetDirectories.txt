@@ -1,3 +1,0 @@
-/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/demo_face_rfb_det/face_rfb_det/CMakeFiles/rebuild_cache.dir
-/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/demo_face_rfb_det/face_rfb_det/CMakeFiles/edit_cache.dir
-/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/demo_face_rfb_det/face_rfb_det/CMakeFiles/sdkdemo64.dir

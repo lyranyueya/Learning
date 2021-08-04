@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/face_gender.h
+nn_sdk.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/nn_sdk.h
+nn_util.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/nn_util.h
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/main.cpp
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+time.h
+-
+unistd.h
+-
+nn_sdk.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/nn_sdk.h
+nn_util.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/nn_util.h
+pthread.h
+-
+face_gender.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/face_gender.h
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/nn_sdk.h
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_face_gender/face_gender/nn_util.h
+

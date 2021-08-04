@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/image_segmentation.h
+nn_sdk.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/nn_sdk.h
+nn_util.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/nn_util.h
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/main.cpp
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+time.h
+-
+unistd.h
+-
+nn_sdk.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/nn_sdk.h
+nn_util.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/nn_util.h
+pthread.h
+-
+image_segmentation.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/image_segmentation.h
+imagelabel.h
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/imagelabel.h
+opencv2/opencv.hpp
+-
+opencv2/videoio.hpp
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/opencv2/videoio.hpp
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/nn_sdk.h
+
+/mnt/fileroot/junyi.shen/nanoQ/nn_sdk/Linux/SDK_V1.8.2/Demo/demo_image_segmentation/image_segmentation/nn_util.h
+

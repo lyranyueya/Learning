@@ -27,19 +27,6 @@ typedef struct __nn_face_compare
 
 void* postprocess_facecompare(nn_output *pout);
 
-unsigned char *get_jpeg_rawData(const char *name,unsigned int width,unsigned int height);
-float Float16ToFloat32(const signed short* src , float* dst ,int lenth);
-float *dtype_To_F32(nn_output * outdata ,int sz);
-static int _jpeg_to_bmp
-    (
-    FILE * inputFile,
-    unsigned char* bmpData,
-    unsigned int bmpWidth,
-    unsigned int bmpHeight,
-    unsigned int channel
-    );
-
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

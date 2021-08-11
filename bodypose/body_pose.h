@@ -8,7 +8,6 @@
 #ifndef _AMLOGIC_NN_SDK_POSTPROCESS_H
 #define _AMLOGIC_NN_SDK_POSTPROCESS_H
 #include "nn_sdk.h"
-#include "sdk_log.h"
 #include "nn_util.h"
 #ifdef __cplusplus
 extern "C" {
@@ -54,6 +53,12 @@ typedef struct __nn_body_pose
 	unsigned int  detNum;
 	bodypos_t bpos[18];
 }body_pose_out_t;
+typedef struct __nn_person_detect
+{
+    unsigned int  detNum;
+    detBox pBox[MAX_DETECT_NUM];
+}person_detect_out_t;
+
 
 float overlap(float x1, float w1, float x2, float w2);
 float box_intersection(box a, box b);
@@ -75,9 +80,6 @@ float retina_box_union(box a, box b);
 float retina_box_iou(box a, box b);
 int retina_nms_comparator(const void *pa, const void *pb);
 void retina_do_nms_sort(box *boxes, float probs[][1], int total,  float thresh);
-void retina_result(int num, float thresh, box *boxes, float probs[][1],landmark *pland,face_detect_out_t* pface_det_result);
-void retina_point5_result(int num, float thresh, box *boxes, float probs[][1],landmark *pland,face_landmark5_out_t* pface_landmark5_result);
-
 void* postprocess_bodypose(nn_output *pout);
 void* post_posenet(float* pbody,unsigned int size);
 int person_do_post_process(person_detect_out_t* pperson_detect_result);

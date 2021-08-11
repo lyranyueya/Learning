@@ -32,20 +32,6 @@ void rfb_do_nms_sort(box *boxes, float probs[][1], int total, int classes, float
 void face_rfb_result(int num, float thresh, box *boxes, float probs[][1],landmark *pland,face_rfb_detect_out_t* pface_rfb_det_result);
 void do_global_sort(box *boxe1,box *boxe2, float prob1[][1],float prob2[][1], int len1,int len2,float thresh);
 
-unsigned char *get_jpeg_rawData(const char *name,unsigned int width,unsigned int height);
-float Float16ToFloat32(const signed short* src , float* dst ,int lenth);
-float *dtype_To_F32(nn_output * outdata ,int sz);
-
-static int _jpeg_to_bmp
-    (
-    FILE * inputFile,
-    unsigned char* bmpData,
-    unsigned int bmpWidth,
-    unsigned int bmpHeight,
-    unsigned int channel
-    );
-
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

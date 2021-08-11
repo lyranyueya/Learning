@@ -32,20 +32,6 @@ int person_nms_comparator(const void *pa, const void *pb);
 void person_do_nms_sort(box *boxes, float probs[][1], int total, int classes, float thresh);
 void person_set_detections(int num, float thresh, box *boxes, float probs[][1],person_detect_out_t* pperson_detect_result);
 
-
-unsigned char *get_jpeg_rawData(const char *name,unsigned int width,unsigned int height);
-float Float16ToFloat32(const signed short* src , float* dst ,int lenth);
-float *dtype_To_F32(nn_output * outdata ,int sz);
-static int _jpeg_to_bmp
-    (
-    FILE * inputFile,
-    unsigned char* bmpData,
-    unsigned int bmpWidth,
-    unsigned int bmpHeight,
-    unsigned int channel
-    );
-
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

@@ -50,6 +50,7 @@ int sysfs_control_write(const char* pname,char *value);
 int findtok(const char *buff,const char token,int lenth);
 void activate_array(float *start, int num);
 int entry_index(int lw, int lh, int lclasses, int loutputs, int batch, int location, int entry);
+unsigned char *get_jpeg_rawData(const char *name,unsigned int width,unsigned int height);
 #ifdef __cplusplus
 } //extern "C"
 #endif

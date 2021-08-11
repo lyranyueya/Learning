@@ -18,7 +18,6 @@
 #include <pthread.h>
 #include "face_emotion.h"
 
-#define NBG_FROM_MEMORY
 /******************************************************************************
 
 ******************************************************************************/
@@ -106,33 +105,10 @@ void* init_network(int argc,char **argv)
 
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
-
-	#if 1
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
+	
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
 	printf("%d\n",argv[2][1]);
-	#endif
 	
 	printf("the input type should be 64*64*1\n");
 	input_width = 64;
@@ -154,7 +130,17 @@ void* init_network(int argc,char **argv)
 	}
 	return qcontext;
 }
-
+#ifdef USE_OPENCV
+int resize_input_data(unsigned char *indata,unsigned char *outdata)
+{
+	cv::Mat inImage = cv::Mat(display_high, display_width, CV_8UC3);
+	cv::Mat dstImage = cv::Mat(input_high, input_width, CV_8UC3);
+	inImage.data = indata;
+	dstImage.data = outdata;
+	cv::resize(inImage,dstImage,dstImage.size());
+	return 0;
+}
+#endif
 int destroy_network(void *qcontext)
 {
 	if(outbuf)aml_util_freeAlignedBuffer(outbuf);

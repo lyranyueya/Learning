@@ -18,7 +18,7 @@
 #include <pthread.h>
 #include "jpeglib.h"
 #include "yolov3.h"
-#define NBG_FROM_MEMORY
+
 /******************************************************************************
 
 ******************************************************************************/
@@ -115,7 +115,6 @@ int run_network(void *qcontext, unsigned char *qrawdata,int fbmode,unsigned char
 			if (right > cols-2) right = cols-2;
 			if (top < 2) top = 2;
 			if (bot > rows-2) bot = rows-2;
-			
 		}
 		memset(obj_detect_out,0,sizeof(obj_detect_out_t));
 	}
@@ -135,32 +134,9 @@ void* init_network(int argc,char **argv)
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
 
-	#if 1
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
 	printf("%d\n",argv[2][1]);
-	#endif
 	
 	printf("the input type should be 416*416*3\n");
 	input_width = 416;

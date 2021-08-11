@@ -20,8 +20,6 @@
 #include <iostream>
 #include "face_rfb_det.h"
 
-
-#define NBG_FROM_MEMORY
 /******************************************************************************
 
 ******************************************************************************/
@@ -108,33 +106,9 @@ void* init_network(int argc,char **argv)
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
 
-	#if 0
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
-	printf("%d\n",argv[2][1]);
-	#endif
-	
+	printf("%d\n",argv[2][1]);	
 		
 	printf("the input type should be 320*320*3\n");
 	input_width = 320;
@@ -298,8 +272,7 @@ int main(int argc,char **argv)
 		inmode = AML_IN_PICTURE;
 		thread_args = (void*)argv[2];
 	}
-
-
+	
 	if (0 != pthread_create(&tid[1],NULL,net_thread_func,thread_args))
 	{
 		fprintf(stderr, "Couldn't create thread func\n");

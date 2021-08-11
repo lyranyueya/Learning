@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "head_detection.h"
 #include <time.h>
 #include <math.h>
 #include "nn_sdk.h"

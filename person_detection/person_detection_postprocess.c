@@ -20,7 +20,7 @@
 #include <math.h>
 #include "nn_sdk.h"
 #include "nn_util.h"
-#include "jpeglib.h"
+
 
 float p_bbox_32[8][12][20]; //384/32,640/32
 float p_bbox_16[8][24][40];
@@ -29,7 +29,6 @@ float p_bbox_8[8][48][80];
 float p_prob_32[480][2];
 float p_prob_16[1920][2];
 float p_prob_8[7680][2];
-
 
 static float p_prob32[480][1];
 static float p_prob16[1920][1];

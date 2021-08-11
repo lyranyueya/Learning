@@ -100,34 +100,10 @@ void* init_network(int argc,char **argv)
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
 
-	#if 1
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
 	printf("%d\n",argv[2][1]);
-	#endif
 	
-
 	printf("the input type should be 112*112*3\n");
 	input_width = 112;
 	input_high = 112;

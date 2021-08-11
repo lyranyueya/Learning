@@ -20,11 +20,9 @@
 #include "jpeglib.h"
 #include <iostream>
 
-static const char *sdkversion = "v1.8.0,2021.01";
 static void *context = NULL;
 char * jpath = NULL;
 static unsigned char *rawdata = NULL;
-static unsigned char *data_carplate = NULL;
 //////////////////for input/output dma////////////////////
 static unsigned char *outbuf = NULL;
 static unsigned char *inbuf = NULL;
@@ -76,8 +74,8 @@ int run_network(void *qcontext, unsigned char *qrawdata,int fbmode,unsigned char
 	
 	outconfig.format = AML_OUTDATA_FLOAT32;
 	outdata = (nn_output*)aml_module_output_get(qcontext,outconfig);
-
-	face_det_out = (face_detect_out_t*)post_process_face_detection(outdata);
+	face_det_out = (face_detect_out_t*)postprocess_facedet(outdata);
+	
 	if (face_det_out == NULL)
 	{
 		printf("aml_module_output_get error\n");
@@ -102,33 +100,9 @@ void* init_network(int argc,char **argv)
 
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
-
-	#if 0
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
+	
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
-	
-	#endif
 	
 	printf("the input type should be 640*384*3\n");
 	input_width = 640;
@@ -150,7 +124,17 @@ void* init_network(int argc,char **argv)
 	}
 	return qcontext;
 }
-
+#ifdef USE_OPENCV
+int resize_input_data(unsigned char *indata,unsigned char *outdata)
+{
+	cv::Mat inImage = cv::Mat(display_high, display_width, CV_8UC3);
+	cv::Mat dstImage = cv::Mat(input_high, input_width, CV_8UC3);
+	inImage.data = indata;
+	dstImage.data = outdata;
+	cv::resize(inImage,dstImage,dstImage.size());
+	return 0;
+}
+#endif
 int destroy_network(void *qcontext)
 {
 	if(outbuf)aml_util_freeAlignedBuffer(outbuf);

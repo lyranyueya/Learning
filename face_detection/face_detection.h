@@ -62,20 +62,6 @@ void *post_process_face_detection(nn_output *pOut);
 void* postprocess_facedet(nn_output *pout);
 int face_detect_postprocess(face_detect_out_t* pface_det_result );
 
-unsigned char *get_jpeg_rawData(const char *name,unsigned int width,unsigned int height);
-float Float16ToFloat32(const signed short* src , float* dst ,int lenth);
-float *dtype_To_F32(nn_output * outdata ,int sz);
-
-static int _jpeg_to_bmp
-    (
-    FILE * inputFile,
-    unsigned char* bmpData,
-    unsigned int bmpWidth,
-    unsigned int bmpHeight,
-    unsigned int channel
-    );
-
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

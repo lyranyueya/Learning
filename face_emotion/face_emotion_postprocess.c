@@ -61,9 +61,7 @@ void* postprocess_emotion(nn_output *pout)
     }
     emotion_result->emotion= MaxClass[0];
     emotion_result->prob= fMaxProb[0];
-	
-	data = &emotion_result;
-    return data;
+    return (void*)emotion_result;
 }
 
 /****************************************************************************/

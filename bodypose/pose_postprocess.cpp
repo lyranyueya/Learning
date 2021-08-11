@@ -21,6 +21,9 @@
 #include "nn_util.h"
 #include <iostream>
 #include <vector>
+#include <unistd.h>
+#include<sys/types.h>
+#include<fcntl.h>
 
 
 
@@ -36,6 +39,10 @@ using namespace cv;
 using namespace cv::dnn;
 #endif
 
+#define _BASETSD_H
+#define NN_TENSOR_MAX_DIMENSION_NUMBER 4
+#define X_MAX 639.0 / 640.0
+#define Y_MAX 383.0 / 384.0
 /*
 #include <opencv2/opencv.hpp>
 
@@ -570,6 +577,442 @@ static void check_result(vector<cv::Mat> &heat_map, simple_pose_detect_t* result
 #endif
 
 /*******************    simple pose end   ************************/
+
+/*-------------------------------------------
+			cv_postprocess_util
+-------------------------------------------*/
+float overlap(float x1, float w1, float x2, float w2)
+{
+    float l1 = x1 - w1/2;
+    float l2 = x2 - w2/2;
+    float left = l1 > l2 ? l1 : l2;
+    float r1 = x1 + w1/2;
+    float r2 = x2 + w2/2;
+    float right = r1 < r2 ? r1 : r2;
+    return right - left;
+}
+
+float box_intersection(box a, box b)
+{
+    float area = 0;
+    float w = overlap(a.x, a.w, b.x, b.w);
+    float h = overlap(a.y, a.h, b.y, b.h);
+    if (w < 0 || h < 0)
+        return 0;
+    area = w*h;
+    return area;
+}
+
+float box_union(box a, box b)
+{
+    float i = box_intersection(a, b);
+    float u = a.w*a.h + b.w*b.h - i;
+    return u;
+}
+
+float box_iou(box a, box b)
+{
+    return box_intersection(a, b)/box_union(a, b);
+}
+
+int nms_comparator(const void *pa, const void *pb)
+{
+    sortable_bbox a = *(sortable_bbox *)pa;
+    sortable_bbox b = *(sortable_bbox *)pb;
+    float diff = a.probs[a.index][b.classId] - b.probs[b.index][b.classId];
+    if (diff < 0) return 1;
+    else if(diff > 0) return -1;
+    return 0;
+}
+
+void do_nms_sort(box *boxes, float **probs, int total, int classes, float thresh)
+{
+    int i, j, k;
+    sortable_bbox *s = (sortable_bbox *)calloc(total, sizeof(sortable_bbox));
+
+    for (i = 0; i < total; ++i)
+    {
+        s[i].index = i;
+        s[i].classId = 0;
+        s[i].probs = probs;
+    }
+    for (k = 0; k < classes; ++k)
+    {
+        for (i = 0; i < total; ++i)
+        {
+            s[i].classId = k;
+        }
+        qsort(s, total, sizeof(sortable_bbox), nms_comparator);
+        for (i = 0; i < total; ++i)
+        {
+            if (probs[s[i].index][k] == 0)
+                continue;
+            for (j = i+1; j < total; ++j)
+            {
+                box b = boxes[s[j].index];
+                if (probs[s[j].index][k]>0)
+                {
+                    if (box_iou(boxes[s[i].index], b) > thresh)
+                    {
+                        probs[s[j].index][k] = 0;
+                    }
+                }
+            }
+        }
+    }
+    free(s);
+}
+
+void flatten(float *x, int size, int layers, int batch, int forward)
+{
+    float *swap = (float*)calloc(size*layers*batch, sizeof(float));
+    int i,c,b;
+    for (b = 0; b < batch; ++b)
+    {
+        for (c = 0; c < layers; ++c)
+        {
+            for (i = 0; i < size; ++i)
+            {
+                int i1 = b*layers*size + c*size + i;
+                int i2 = b*layers*size + i*layers + c;
+                if (forward) swap[i2] = x[i1];
+                else swap[i1] = x[i2];
+            }
+        }
+    }
+    memcpy(x, swap, size*layers*batch*sizeof(float));
+    free(swap);
+}
+
+void softmax(float *input, int n, float temp, float *output)
+{
+    int i;
+    float sum = 0;
+    float largest = -FLT_MAX;
+    for (i = 0; i < n; ++i)
+    {
+        if (input[i] > largest) largest = input[i];
+    }
+    for (i = 0; i < n; ++i)
+    {
+        float e = exp(input[i]/temp - largest/temp);
+        sum += e;
+        output[i] = e;
+    }
+    for (i = 0; i < n; ++i)
+    {
+        output[i] /= sum;
+    }
+}
+
+float sigmod(float x)
+{
+    return 1.0/(1+exp(-x));
+}
+
+float logistic_activate(float x)
+{
+    return 1./(1. + exp(-x));
+}
+
+unsigned char *transpose(const unsigned char * src,int width,int height)
+{
+    unsigned char* dst;
+    int i,j,m;
+    int channel = 3;
+
+    dst = (unsigned char*)malloc(width*height*channel);
+    memset(dst,0,width*height*channel);
+
+    /*hwc -> whc*/
+    for (i = 0;i < width; i++)
+    {
+        for (j = 0; j < height; j++)
+        {
+            for (m = 0;m < channel;m++)
+                *(dst + i * height * channel + j * channel + m) = *(src + j * width * channel + i * channel + m);
+        }
+    }
+    return dst;
+}
+
+int entry_index(int lw, int lh, int lclasses, int loutputs, int batch, int location, int entry)
+{
+    int n = location / (lw*lh);
+    int loc = location % (lw*lh);
+    return batch * loutputs + n * lw*lh*(4 + lclasses + 1) + entry * lw*lh + loc;
+}
+
+void activate_array(float *start, int num)
+{
+    for (int i = 0; i < num; i ++){
+        start[i] = logistic_activate(start[i]);
+    }
+}
+
+/*-------------------------------------------
+				retina_model
+-------------------------------------------*/
+typedef unsigned char   uint8_t;
+typedef struct
+{
+    int index;
+    int classId;
+    float probs;
+} sortable_bbox_retina;
+
+float bbox_32[12][20][8]; //384/32,640/32
+float bbox_16[24][40][8];
+float bbox_8[48][80][8];
+//prob score,input
+float prob_32[240][2][2];
+float prob_16[960][2][2];
+float prob_8[3840][2][2];
+//land mark
+float land_32[12][20][20]; //384/32,640/32
+float land_16[24][40][20];
+float land_8[48][80][20];
+
+static float prob32[480][1];
+static float prob16[1920][1];
+static float prob8[7680][1];
+//output box
+static box box32[12][20][2];
+static box *pbox32;
+static box box16[24][40][2];
+static box *pbox16;
+static box box8[48][80][2];
+static box *pbox8;
+//landmark
+static landmark land32[12][20][2][5];
+static landmark *pland32;
+static landmark land16[24][40][2][5];
+static landmark *pland16;
+static landmark land8[48][80][2][5];
+static landmark *pland8;
+
+int g_detect_number = 230;
+float retina_overlap(float x1, float w1, float x2, float w2)
+{
+    float l1 = x1;
+    float l2 = x2;
+    float left = l1 > l2 ? l1 : l2;
+    float r1 = x1 + w1;
+    float r2 = x2 + w2;
+    float right = r1 < r2 ? r1 : r2;
+    return right - left;
+}
+float retina_box_intersection(box a, box b)
+{
+    float area = 0;
+    float w = retina_overlap(a.x, a.w, b.x, b.w);
+    float h = retina_overlap(a.y, a.h, b.y, b.h);
+    if (w < 0 || h < 0)
+        return 0;
+    area = w*h;
+    return area;
+}
+
+float retina_box_union(box a, box b)
+{
+    float i = retina_box_intersection(a, b);
+    float u = a.w*a.h + b.w*b.h - i;
+    return u;
+}
+
+float retina_box_iou(box a, box b)
+{
+    return retina_box_intersection(a, b)/retina_box_union(a, b);
+}
+
+int retina_nms_comparator(const void *pa, const void *pb)
+{
+    sortable_bbox_retina a = *(sortable_bbox_retina *)pa;
+    sortable_bbox_retina b = *(sortable_bbox_retina *)pb;
+    float diff = a.probs - b.probs;
+    if (diff < 0) return 1;
+    else if (diff > 0) return -1;
+    return 0;
+}
+
+void do_global_sort(box *boxe1,box *boxe2, float prob1[][1],float prob2[][1], int len1,int len2,float thresh)
+{
+    int i,j;
+    for (i = 0; i < len1; ++i)
+    {
+        if (prob1[i][0] > thresh)
+        {
+            for (j = 0;j < len2;j++)
+            {
+                if (prob2[j][0] > thresh)
+                {
+                    if (retina_box_iou(boxe1[i], boxe2[j]) > 0.1)
+                    {
+                        if (prob2[j][0] > prob1[i][0])
+                        {
+                            prob1[i][0] = 0;
+                        }
+                        else
+                        {
+                            prob2[j][0] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void retina_do_nms_sort(box *boxes, float probs[][1], int total,  float thresh)
+{
+    int i, j;
+    sortable_bbox_retina *s = (sortable_bbox_retina *)calloc(total, sizeof(sortable_bbox_retina));
+    for (i = 0; i < total; ++i)
+    {
+        s[i].index = i;
+        s[i].classId = 0;
+        s[i].probs = probs[i][0];
+        //printf("%f\n",s[i].probs);
+    }
+
+    for (i = 0; i < total; ++i)
+    {
+        s[i].classId = 0;
+    }
+    qsort(s, total, sizeof(sortable_bbox_retina), retina_nms_comparator);
+
+    for (i = 0; i < total; ++i)
+    {
+        if (probs[s[i].index][0] >= 0.01)  //zxw
+        {
+            for (j = i+1; j < total; j++)
+            {
+                if (probs[s[j].index][0] >= 0.01)
+                {
+                    box b = boxes[s[j].index];
+                    if (retina_box_iou(boxes[s[i].index], b) > thresh)
+                    {
+                        probs[s[j].index][0] = 0;
+                    }
+                }
+            }
+        }
+    }
+    free(s);
+}
+
+/******
+void retina_result(int num, float thresh, box *boxes, float probs[][1],landmark *pland,face_detect_out_t* pface_det_result)
+{
+
+    int i;
+    int detect_num = pface_det_result->detNum;
+    for (i = 0; i < num; i++)
+    {
+        float prob = probs[i][0];
+        if (detect_num < MAX_DETECT_NUM)
+        {
+            if (prob > thresh)
+            {
+                if (detect_num >= g_detect_number)
+                {
+                    break;
+                }
+                int left = 0;
+                int right = 0;
+                int top = 0;
+                int bot = 0;
+                left  = boxes[i].x / 640.0;
+                right = (boxes[i].x + boxes[i].w) / 640.0;
+                top   = boxes[i].y / 384.0;
+                bot   = (boxes[i].y + boxes[i].h) / 384.0;
+
+                if (left < 0) left = 0;
+                if (right > 1) right = 1.0;
+                if (top < 0) top = 0;
+                if (bot > 1) bot = 1.0;
+                pface_det_result->pBox[detect_num].x = boxes[i].x / 640.0;
+                pface_det_result->pBox[detect_num].y = boxes[i].y / 384.0;
+                pface_det_result->pBox[detect_num].w = boxes[i].w / 640.0;
+                pface_det_result->pBox[detect_num].h = boxes[i].h / 384.0;
+                if (pface_det_result->pBox[detect_num].x <= 0 ) pface_det_result->pBox[detect_num].x =0.000001;
+                if (pface_det_result->pBox[detect_num].y <= 0 ) pface_det_result->pBox[detect_num].y =0.000001;
+                if (pface_det_result->pBox[detect_num].w <= 0 ) pface_det_result->pBox[detect_num].w =0.000001;
+                if (pface_det_result->pBox[detect_num].h <= 0 ) pface_det_result->pBox[detect_num].h =0.000001;
+                if (pface_det_result->pBox[detect_num].x >= 1 ) pface_det_result->pBox[detect_num].x =0.999999;
+                if (pface_det_result->pBox[detect_num].y >= 1 ) pface_det_result->pBox[detect_num].y =0.999999;
+                if (pface_det_result->pBox[detect_num].w >= 1 ) pface_det_result->pBox[detect_num].w =0.999999;
+                if (pface_det_result->pBox[detect_num].h >= 1 ) pface_det_result->pBox[detect_num].h =0.999999;
+                detect_num++;
+            }
+        }
+    }
+    //printf("detect number =%d \n", detect_num);
+    pface_det_result->detNum = detect_num;
+}
+
+
+void retina_point5_result(int num, float thresh, box *boxes, float probs[][1],landmark *pland,face_landmark5_out_t* pface_landmark5_result)
+{
+
+    int i,j;
+    int detect_num = pface_landmark5_result->detNum;
+    for (i = 0; i < num; i++)
+    {
+        float prob = probs[i][0];
+        if (detect_num < MAX_DETECT_NUM)
+        {
+            if (prob > thresh)
+            {
+                if (detect_num >= g_detect_number)
+                {
+                    break;
+                }
+                int left = 0;
+                int right = 0;
+                int top = 0;
+                int bot = 0;
+
+                left  = boxes[i].x / 640.0;
+                right = (boxes[i].x + boxes[i].w) / 640.0;
+                top   = boxes[i].y / 384.0;
+                bot   = (boxes[i].y + boxes[i].h) / 384.0;
+
+                if (left < 0) left = 0;
+                if (right > 1) right = 1.0;
+                if (top < 0) top = 0;
+                if (bot > 1) bot = 1.0;
+                pface_landmark5_result->facebox[detect_num].x = boxes[i].x / 640.0;
+                pface_landmark5_result->facebox[detect_num].y = boxes[i].y / 384.0;
+                pface_landmark5_result->facebox[detect_num].w = boxes[i].w / 640.0;
+                pface_landmark5_result->facebox[detect_num].h = boxes[i].h / 384.0;
+                if (pface_landmark5_result->facebox[detect_num].x <= 0 ) pface_landmark5_result->facebox[detect_num].x =0.000001;
+                if (pface_landmark5_result->facebox[detect_num].y <= 0 ) pface_landmark5_result->facebox[detect_num].y =0.000001;
+                if (pface_landmark5_result->facebox[detect_num].w <= 0 ) pface_landmark5_result->facebox[detect_num].w =0.000001;
+                if (pface_landmark5_result->facebox[detect_num].h <= 0 ) pface_landmark5_result->facebox[detect_num].h =0.000001;
+                if (pface_landmark5_result->facebox[detect_num].x >= 1 ) pface_landmark5_result->facebox[detect_num].x =0.999999;
+                if (pface_landmark5_result->facebox[detect_num].y >= 1 ) pface_landmark5_result->facebox[detect_num].y =0.999999;
+                if (pface_landmark5_result->facebox[detect_num].w >= 1 ) pface_landmark5_result->facebox[detect_num].w =0.999999;
+                if (pface_landmark5_result->facebox[detect_num].h >= 1 ) pface_landmark5_result->facebox[detect_num].h =0.999999;
+                for (j=0 ;j <5 ; j++)
+                {
+                    pface_landmark5_result->pos[detect_num][j].x = pland[i * 5 + j].x / 640.0;
+                    pface_landmark5_result->pos[detect_num][j].y = pland[i * 5 + j].y / 384.0;
+                    if (pface_landmark5_result->pos[detect_num][j].x <= 0) pface_landmark5_result->pos[detect_num][j].x=0.001;
+                    if (pface_landmark5_result->pos[detect_num][j].x >= X_MAX) pface_landmark5_result->pos[detect_num][j].x=0.997;
+                    if (pface_landmark5_result->pos[detect_num][j].y <= 0) pface_landmark5_result->pos[detect_num][j].y=0.001;
+                    if (pface_landmark5_result->pos[detect_num][j].y >= Y_MAX) pface_landmark5_result->pos[detect_num][j].y=0.997;
+                    //printf("point number =%d,rawData-X:%.5f,Y:%.5f\n" , j, pface_landmark5_result->pos[detect_num][j].x, pface_landmark5_result->pos[detect_num][j].y);
+                }
+                detect_num++;
+            }
+        }
+    }
+    //printf("detect number =%d \n", detect_num);
+    pface_landmark5_result->detNum = detect_num;
+}
+
+*********/
 
 
 /*******************   person detect **************************

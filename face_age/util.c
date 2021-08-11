@@ -15,12 +15,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "face_age.h"
 #include <time.h>
 #include <math.h>
 #include "nn_sdk.h"
 #include "nn_util.h"
 #include "jpeglib.h"
+
 
 static int _jpeg_to_bmp
     (

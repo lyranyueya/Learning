@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "yolov3.h"
 #include <time.h>
 #include <math.h>
 #include "nn_sdk.h"

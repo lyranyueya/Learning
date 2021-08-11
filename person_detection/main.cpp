@@ -19,7 +19,6 @@
 #include "jpeglib.h"
 #include "person_detection.h"
 
-#define NBG_FROM_MEMORY
 /******************************************************************************
 
 ******************************************************************************/
@@ -55,11 +54,7 @@ int run_network(void *qcontext, unsigned char *qrawdata,int fbmode,unsigned char
 	int rows=416;
 	FILE *fp,*File;
 	aml_output_config_t outconfig;
-	static unsigned char data_land68[3600];
-	static unsigned char data_emotion[4096];
-	static unsigned char *face_compare_data = NULL;
-
-
+	
 	//tmsStart = get_perf_count();
 	if (use_dma == 1)
 	{
@@ -94,9 +89,7 @@ int run_network(void *qcontext, unsigned char *qrawdata,int fbmode,unsigned char
 	for (i = 0; i < person_detect_out->detNum; i++)
 	{
 		printf("person_number:%d : box.x = %f , box.y = %f, box.w = %f, box.h = %f \n", i, person_detect_out->pBox[i].x, person_detect_out->pBox[i].y, person_detect_out->pBox[i].w, person_detect_out->pBox[i].h);
-	
 	}
-
 	return ret;
 }
 
@@ -112,32 +105,9 @@ void* init_network(int argc,char **argv)
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
 
-	#if 1
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
 	printf("%d\n",argv[2][1]);
-	#endif
 	
 	printf("the input type should be 640*384*3\n");
 	input_width = 640;
@@ -169,6 +139,17 @@ int destroy_network(void *qcontext)
 	return ret;
 }
 
+#ifdef USE_OPENCV
+int resize_input_data(unsigned char *indata,unsigned char *outdata)
+{
+	cv::Mat inImage = cv::Mat(display_high, display_width, CV_8UC3);
+	cv::Mat dstImage = cv::Mat(input_high, input_width, CV_8UC3);
+	inImage.data = indata;
+	dstImage.data = outdata;
+	cv::resize(inImage,dstImage,dstImage.size());
+	return 0;
+}
+#endif
 void* net_thread_func(void *args)
 {
 	jpath = (char*)args;

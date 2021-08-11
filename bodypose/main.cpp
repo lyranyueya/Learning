@@ -26,7 +26,6 @@
 #include "opencv2/videoio.hpp"
 using namespace cv;
 #endif
-#define NBG_FROM_MEMORY
 /******************************************************************************
 
 ******************************************************************************/
@@ -34,7 +33,6 @@ using namespace cv;
 static void *context = NULL;
 char * jpath = NULL;
 static unsigned char *rawdata = NULL;
-static unsigned char *data_carplate = NULL;
 //////////////////for input/output dma////////////////////
 static unsigned char *outbuf = NULL;
 static unsigned char *inbuf = NULL;
@@ -49,7 +47,6 @@ nn_input inData;
 extern pthread_mutex_t mutex_data;
 extern unsigned char *rgbbuf;
 extern char *fbp;
-
 
 int run_network(void *qcontext, unsigned char *qrawdata,int fbmode,unsigned char *fbbuf)
 {
@@ -66,10 +63,6 @@ int run_network(void *qcontext, unsigned char *qrawdata,int fbmode,unsigned char
 	int rows=416;
 	FILE *fp,*File;
 	aml_output_config_t outconfig;
-	static unsigned char data_land68[3600];
-	static unsigned char data_emotion[4096];
-	static unsigned char *face_compare_data = NULL;
-
 
 	//tmsStart = get_perf_count();
 	if (use_dma == 1)
@@ -156,32 +149,9 @@ void* init_network(int argc,char **argv)
 	memset(&config,0,sizeof(aml_config));
 	FILE *fp,*File;
 
-	#if 1
-	fp = fopen(argv[1],"rb");
-	if(fp == NULL)
-	{
-		printf("open %s fail\n",argv[1]);
-		return NULL;
-	}
-	fseek(fp,0,SEEK_END);
-	size = (int)ftell(fp);
-	rewind(fp);
-	config.pdata = (char *)calloc(1,size);
-	if(config.pdata == NULL)
-	{
-		printf("malloc nbg memory fail\n");
-		return NULL;
-	}
-	fread((void*)config.pdata,1,size,fp);
-	config.nbgType = NN_NBG_MEMORY;
-	config.length = size;
-	fclose(fp);
-
-	#else
 	config.path = (const char *)argv[1];
 	config.nbgType = NN_NBG_FILE;
 	printf("%d\n",argv[2][1]);
-	#endif
 
 	printf("the input type should be 640*480*3\n");
 	input_width = 640;

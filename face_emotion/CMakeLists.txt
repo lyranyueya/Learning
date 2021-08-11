@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1)
 SET(CMAKE_SYSTEM_NAME Linux)
 
-SET(ARM_32 arm_32)
-#SET(ARM_64 arm_64)
+#SET(ARM_32 arm_32)
+SET(ARM_64 arm_64)
 SET(GCC_PATH /mnt/fileroot/junyi.shen/buildroot/toolchain/gcc/linux-x86)
 
 PROJECT(AML_NN_SDK)

@@ -20,7 +20,7 @@
 #include <math.h>
 #include "nn_sdk.h"
 #include "nn_util.h"
-#include "jpeglib.h"
+
 
 static float threshold = 0.6;
 static float nms_sort = 0.4;
@@ -76,7 +76,6 @@ static landmark *rpland32;
 static landmark rland64[5][5][3][5];
 static landmark *rpland64;
 
-const char *sdk_demo_version = "NNSDK_DEMO,v1.8.0,2021.01";
 
 int g_detect_number = 230;
 typedef struct{

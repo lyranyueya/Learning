@@ -20,7 +20,6 @@
 #include <math.h>
 #include "nn_sdk.h"
 #include "nn_util.h"
-#include "jpeglib.h"
 #define FLT_MAX 3.402823466e+38F
 
 int g_detect_number = 230;
